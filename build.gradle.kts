@@ -20,7 +20,6 @@ dependencies {
     api("org.apache.logging.log4j:log4j-core:2.17.1")
     api("junit:junit:4.13.1")
     api("org.junit.jupiter:junit-jupiter:5.8.2")
-    api("org.projectlombok:lombok:1.18.34")
     implementation("javax.validation:validation-api:2.0.1.Final")
 }
 

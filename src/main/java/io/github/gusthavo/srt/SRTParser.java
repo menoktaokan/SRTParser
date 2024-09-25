@@ -1,9 +1,5 @@
 package io.github.gusthavo.srt;
 
-import lombok.Data;
-import lombok.experimental.FieldDefaults;
-import lombok.extern.slf4j.Slf4j;
-
 import javax.validation.constraints.NotNull;
 import java.time.Duration;
 import java.time.LocalTime;
@@ -14,14 +10,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-@Slf4j
-@FieldDefaults(level = lombok.AccessLevel.PRIVATE)
 public class SRTParser {
 
-	public final List<Subtitle> subtitles = new ArrayList<>();
+	private final List<Subtitle> subtitles = new ArrayList<>();
 
-	final static Pattern PATTERN_NUMBERS = Pattern.compile("(\\d+)");
-	final static Pattern PATTERN_TIME = Pattern.compile("([\\d]{2}:[\\d]{2}:[\\d]{2},[\\d]{3}).*([\\d]{2}:[\\d]{2}:[\\d]{2},[\\d]{3})");
+	final private static Pattern PATTERN_NUMBERS = Pattern.compile("(\\d+)");
+	final private static Pattern PATTERN_TIME = Pattern.compile("([\\d]{2}:[\\d]{2}:[\\d]{2},[\\d]{3}).*([\\d]{2}:[\\d]{2}:[\\d]{2},[\\d]{3})");
 
 	/**
 	 * Verilen string içerisindeki altyazıları alır ve altyazı listesine dönüştürür.
@@ -138,23 +132,8 @@ public class SRTParser {
 		return localTime.toNanoOfDay() / 1000000;
 	}
 
-	@Data
-	@FieldDefaults(level = lombok.AccessLevel.PRIVATE)
-	public static class Subtitle {
-
-		Integer id;
-		String startTime;
-		String endTime;
-		String text;
-
-		@Override
-		public String toString() {
-			return id + "\n" + startTime + " --> " + endTime + "\n" + text + "\n\n";
-		}
-	}
-
 	@Override
 	public String toString() {
-		return this.subtitles.stream().map(SRTParser.Subtitle::toString).collect(Collectors.joining()).trim();
+		return this.subtitles.stream().map(Subtitle::toString).collect(Collectors.joining()).trim();
 	}
 }
