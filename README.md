@@ -1,49 +1,71 @@
 # SRTParser
 
-SRTParser is everything that you need to deal with SRT files, legend files.
+SRTParser, SRT dosyaları ve altyazı dosyaları ile çalışmak için ihtiyacınız olan her şeyi sağlar.
 
-## Installation
+## Kurulum
 
-As a light weight version of the code that has been optimized for Android devices, the best way to make use of it is cloning the code and adding it to your project.
+Android cihazlar için optimize edilmiş hafif bir sürüm olduğundan, kodu klonlayıp projenize eklemek en iyi kullanım yoludur.
 
-## Contributing
-Pull requests are welcome.
+## Katkıda Bulunma
 
-Please make sure to update tests as appropriate.
+Pull request'ler memnuniyetle karşılanır.
 
-## What is this project for?
+Lütfen uygun şekilde testleri güncellemeyi unutmayın.
 
-The purpose of this project is to give Java or Android developers an easy, fast, performant and light weight srt library.
+## Bu projenin amacı nedir?
 
-You can easily read srt files, re-sync and search for a specific subtitle in your player, or anything that is needed a subtitle.
+Bu projenin amacı, Java veya Android geliştiricilerine kolay, hızlı, performanslı ve hafif bir srt kütüphanesi sağlamaktır.
 
-## The usage of the project:
+String formattaki SRT değerlerinizi kolayca birleştirmenize olanak tanır.
 
-```	
-import main.gusthavo.srt.SRTParser;
-import main.gusthavo.srt.Subtitle;
+## Projenin kullanımı:
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.logging.Logger;
+```java
+package io.github.gusthavo.srt;
 
-public class MyClass {
-
-    private final static Logger logger = Logger.getLogger(MyClass.class.getName());
-
+public class DemoApp {
     public static void main(String[] args) {
-        String path = System.getProperty("user.dir") + File.separator + "files" + File.separator +"sub.srt";
 
-        boolean keepNewLinesEscaped = true;
+        SRTParser parser = new SRTParser();
 
-        ArrayList<Subtitle> subtitles = SRTParser.getSubtitlesFromFile(path, keepNewLinesEscaped);
+        String srt1 = "1\n" +
+                "00:00:00,000 --> 00:00:02,500\n" +
+                "Sessiz lüks, gösterişten uzak ama derin bir zenginliği ifade eder.\n\n" +
+                "2\n" +
+                "00:00:02,500 --> 00:00:06,000\n" +
+                "Markaların logolarından çok, kalite ve sadeliğe önem verir.\n\n" +
+                "3\n" +
+                "00:00:06,000 --> 00:00:09,500\n" +
+                "İnsanlar artık daha zarif, göz önünde olmayan zenginliği tercih ediyor.\n\n" +
+                "4\n" +
+                "00:00:09,500 --> 00:00:13,000\n" +
+                "Bu, öne çıkma çabası değil, kendini tanıyan bir tavır.\n\n" +
+                "5\n" +
+                "00:00:13,000 --> 00:00:15,000\n" +
+                "Sessiz lüks, bir yaşam tarzıdır.\n";
 
-        for (Subtitle subtitle : subtitles) {
-            logger.info(subtitle.toString());
-            // Print out: Subtitle [id=1, startTime=00:00:01,500, endTime=00:00:02,500, text=Testing str file., timeIn=1500, timeOut=2500]
-        }
+        parser.mergeSubtitles(srt1);
+
+        String srt2 = "1\n" +
+                "00:00:00,000 --> 00:00:03,000\n" +
+                "Minimalizm, modern yaşamın karmaşasından bir kaçış yoludur.\n\n" +
+                "2\n" +
+                "00:00:03,000 --> 00:00:07,000\n" +
+                "Az ama öz yaşam, fazlalıklardan arınarak huzuru bulmayı amaçlar.\n\n" +
+                "3\n" +
+                "00:00:07,000 --> 00:00:10,000\n" +
+                "Eşyaların çokluğu yerine, anlam ve işlev ön plandadır.\n\n" +
+                "4\n" +
+                "00:00:10,000 --> 00:00:13,500\n" +
+                "Bu, tüketim toplumuna bir tepki ve bilinçli bir tercih.\n\n" +
+                "5\n" +
+                "00:00:13,500 --> 00:00:15,000\n" +
+                "Minimalizm, sade bir zenginliktir.\n";
+
+        parser.mergeSubtitles(srt2);
+        System.out.println(parser);
     }
 }
 ```
 
-Version 0.0.2
+Sürüm 0.1.0
