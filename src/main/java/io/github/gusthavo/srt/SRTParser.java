@@ -1,139 +1,160 @@
 package io.github.gusthavo.srt;
 
-import io.github.gusthavo.utils.SRTUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.Data;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
+import javax.validation.constraints.NotNull;
+import java.time.Duration;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
-public final class SRTParser {
+@Slf4j
+@FieldDefaults(level = lombok.AccessLevel.PRIVATE)
+public class SRTParser {
 
-	private final static Logger logger = LogManager.getLogger(SRTParser.class);
+	public final List<Subtitle> subtitles = new ArrayList<>();
 
-	private static final Pattern PATTERN_TIME = Pattern.compile("([\\d]{2}:[\\d]{2}:[\\d]{2},[\\d]{3}).*([\\d]{2}:[\\d]{2}:[\\d]{2},[\\d]{3})");
-	private static final Pattern PATTERN_NUMBERS = Pattern.compile("(\\d+)");
-	private static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
-
-	private static final String REGEX_REMOVE_TAGS = "<[^>]*>";
-
-	private static final int PATTERN_TIME_REGEX_GROUP_START_TIME = 1;
-	private static final int PATTERN_TIME_REGEX_GROUP_END_TIME = 2;
+	final static Pattern PATTERN_NUMBERS = Pattern.compile("(\\d+)");
+	final static Pattern PATTERN_TIME = Pattern.compile("([\\d]{2}:[\\d]{2}:[\\d]{2},[\\d]{3}).*([\\d]{2}:[\\d]{2}:[\\d]{2},[\\d]{3})");
 
 	/**
+	 * Verilen string içerisindeki altyazıları alır ve altyazı listesine dönüştürür.
 	 *
-	 * This method is responsible for parsing a STR file.
-	 *
-	 * This method will not have any new line and also will not make the use of nodes see: Node {@link SRTParser#getSubtitlesFromFile(String, boolean, boolean)}}
-	 *
-	 * Metodo responsavel por fazer parse de um arquivos de legenda. <br>
-	 * Obs. O texto nao vai conter quebra de linhas e nao é utilizado Node {@link SRTParser#getSubtitlesFromFile(String, boolean, boolean)}}
-	 * @param path
-	 * @return
+	 * @param subtitleString Altyazı
+	 * @return               Altyazı listesi
 	 */
-	public static ArrayList<Subtitle> getSubtitlesFromFile (String path) {
-		return getSubtitlesFromFile(path, false, false);
-	}
+	private List<Subtitle> getSubtitlesFromString(String subtitleString) {
 
-	/**
-	 *
-	 * This method is responsible for parsing a STR file.
-	 *
-	 * This method will not have any new line and also will not make the use of nodes see: Node {@link SRTParser#getSubtitlesFromFile(String, boolean, boolean)}}
-	 *
-	 * Metodo responsavel por fazer parse de um arquivos de legenda. <br>
-	 * Obs. O texto nao vai conter quebra de linhas e nao é utilizado Node {@link SRTParser#getSubtitlesFromFile(String, boolean, boolean)}}
-	 * @param path
-	 * @return
-	 */
-	public static ArrayList<Subtitle> getSubtitlesFromFile (String path, boolean keepNewlinesEscape) {
-		return getSubtitlesFromFile(path, keepNewlinesEscape, false);
-	}
-
-	/**
-	 *
-	 * This method is responsible for parsing a STR file.
-	 *
-	 * This method will not have any new line and also will not make the use of nodes see: Node {@link SRTParser#getSubtitlesFromFile(String, boolean, boolean)}}
-	 * Note that you can configure if you want to make the use of Nodes: by setting the parameter usingNodes to true
-	 *
-	 * Metodo responsavel por fazer parse de um arquivos de legenda. <br>
-	 *
-	 * @param path
-	 * @param keepNewlinesEscape
-	 * @param usingNodes
-	 * @return
-	 */
-	public static ArrayList<Subtitle> getSubtitlesFromFile (String path, boolean keepNewlinesEscape, boolean usingNodes) {
-
-		ArrayList<Subtitle> subtitles = null;
+		List<Subtitle> subtitles = new ArrayList<>();
 		Subtitle subtitle;
-		StringBuilder srt;
+		StringBuilder srt = new StringBuilder();
 
-		try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(new FileInputStream(path), DEFAULT_CHARSET))) {
-
-			subtitles = new ArrayList<>();
+		String[] lines = subtitleString.split("\n");
+		for (int i = 0; i < lines.length; i++) {
 			subtitle = new Subtitle();
-			srt = new StringBuilder();
 
-			while (bufferedReader.ready()) {
+			String line = lines[i];
 
-				String line = bufferedReader.readLine();
+			/* Boş satırları atla */
+			if (line.isEmpty())
+				continue;
 
-				Matcher matcher = PATTERN_NUMBERS.matcher(line);
-
-				if (matcher.find()) {
-					subtitle.id = Integer.parseInt(matcher.group(1)); // index
-					line = bufferedReader.readLine();
-				}
-
-				matcher = PATTERN_TIME.matcher(line);
-
-				if (matcher.find()) {
-					subtitle.startTime = matcher.group(PATTERN_TIME_REGEX_GROUP_START_TIME); // start time
-					subtitle.timeIn = SRTUtils.textTimeToMillis(subtitle.startTime);
-					subtitle.endTime = matcher.group(PATTERN_TIME_REGEX_GROUP_END_TIME); // end time
-					subtitle.timeOut = SRTUtils.textTimeToMillis(subtitle.endTime);
-				}
-
-				String aux;
-				while ((aux = bufferedReader.readLine()) != null && !aux.isEmpty()) {
-					srt.append(aux);
-					if (keepNewlinesEscape)
-						srt.append("\n");
-					else {
-						if (!line.endsWith(" ")) // for any new lines '\n' removed from BufferedReader
-							srt.append(" ");
-					}
-				}
-
-				srt.delete(srt.length()-1, srt.length()); // remove '\n' or space from end string
-
-				line = srt.toString();
-				srt.setLength(0); // Clear buffer
-
-				if (line != null && !line.isEmpty())
-					line = line.replaceAll(REGEX_REMOVE_TAGS, ""); // clear all tags
-
-				subtitle.text = line;
-				subtitles.add(subtitle);
-
-				if (usingNodes) {
-					subtitle.nextSubtitle = new Subtitle();
-					subtitle = subtitle.nextSubtitle;
-				} else {
-					subtitle = new Subtitle();
-				}
+			Matcher matcher = PATTERN_NUMBERS.matcher(line);
+			if (matcher.find()) {
+				subtitle.setId(Integer.parseInt(matcher.group(1)));
+				line = lines[++i];
 			}
-		} catch (Exception e) {
-			logger.error("error parsing srt file", e);
+
+			matcher = PATTERN_TIME.matcher(line);
+			if (matcher.find()) {
+				subtitle.setStartTime(matcher.group(1));
+				subtitle.setEndTime(matcher.group(2));
+			}
+
+			srt.setLength(0);
+
+			while (++i < lines.length && !(line = lines[i]).isEmpty())
+				srt.append(line).append("\n");
+
+			subtitle.setText(srt.toString().trim());
+			subtitles.add(subtitle);
 		}
+
 		return subtitles;
+	}
+
+	/**
+	 * Verilen altyazıyı mevcut altyazı listesine ekler.
+	 *
+	 * @param subtitleToMerge   Eklenecek altyazı
+	 */
+	public void mergeSubtitles(@NotNull String subtitleToMerge) {
+
+		List<Subtitle> mergedSubtitleList = getSubtitlesFromString(subtitleToMerge.trim());
+
+		if (this.subtitles.isEmpty()) {
+			this.subtitles.addAll(mergedSubtitleList);
+			return;
+		}
+
+		/*Listenin mevcut boyutunu al ve bir değişkende sakla */
+		int currentSize = this.subtitles.size();
+
+		/* Son altyazının bitiş zamanı bilgisini al */
+		long lastTimeOut = convertSubtitleTimeToMillis(this.subtitles.get(currentSize - 1).getEndTime());
+
+		for (Subtitle subtitle : mergedSubtitleList) {
+			subtitle.setId(++currentSize);
+
+			/* Zamanları milisaniye cinsine dönüştür ve önceki altyazı süresini ekle */
+			long startTime = convertSubtitleTimeToMillis(subtitle.getStartTime()) + lastTimeOut;
+			long endTime = convertSubtitleTimeToMillis(subtitle.getEndTime()) + lastTimeOut;
+
+			subtitle.setStartTime(convertMillisToSubtitleFormat(startTime));
+			subtitle.setEndTime(convertMillisToSubtitleFormat(endTime));
+
+			this.subtitles.add(subtitle);
+		}
+	}
+
+	/**
+	 * Long cinsinden verilen milisaniye bilgisii stringe dönüştürür.
+	 *
+	 * @param time Milisaniye bilgisi
+	 * @return     String cinsinden zaman bilgisi
+	 */
+	private String convertMillisToSubtitleFormat(final long time) {
+
+		Duration duration = Duration.ofMillis(time);
+
+		long hours = duration.toHours();
+		int minutes = duration.toMinutesPart();
+		int seconds = duration.toSecondsPart();
+		int milliseconds = duration.toMillisPart();
+
+		return String.format("%02d:%02d:%02d,%03d", hours, minutes, seconds, milliseconds);
+	}
+
+	/**
+	 * String cinsinden verilen zaman bilgisini milisaniye cinsine dönüştürür.
+	 *
+	 * @param time Zaman bilgisi
+	 * @return     Milisaniye cinsinden zaman bilgisi
+	 */
+	private long convertSubtitleTimeToMillis(final String time) {
+
+		if (time == null)
+			throw new RuntimeException("Time must not be null");
+
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss,SSS");
+		LocalTime localTime = LocalTime.parse(time, formatter);
+
+		return localTime.toNanoOfDay() / 1000000;
+	}
+
+	@Data
+	@FieldDefaults(level = lombok.AccessLevel.PRIVATE)
+	public static class Subtitle {
+
+		Integer id;
+		String startTime;
+		String endTime;
+		String text;
+
+		@Override
+		public String toString() {
+			return id + "\n" + startTime + " --> " + endTime + "\n" + text + "\n\n";
+		}
+	}
+
+	@Override
+	public String toString() {
+		return this.subtitles.stream().map(SRTParser.Subtitle::toString).collect(Collectors.joining()).trim();
 	}
 }
